@@ -20,6 +20,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.Manifest
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.IntentSender
 import android.net.Uri
@@ -71,7 +72,7 @@ class HuntMainActivity : AppCompatActivity() {
         intent.action = ACTION_GEOFENCE_EVENT
         // Use FLAG_UPDATE_CURRENT so that you get the same pending intent back when calling
         // addGeofences() and removeGeofences().
-        PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+        PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -266,6 +267,7 @@ class HuntMainActivity : AppCompatActivity() {
      * no more geofences, we remove the geofence and let the viewmodel know that the ending hint
      * is now "active."
      */
+    @SuppressLint("MissingPermission")
     private fun addGeofenceForClue() {
         if (viewModel.geofenceIsActive()) return
         val currentGeofenceIndex = viewModel.nextGeofenceIndex()
@@ -306,25 +308,16 @@ class HuntMainActivity : AppCompatActivity() {
 
         // First, remove any existing geofences that use our pending intent
         geofencingClient.removeGeofences(geofencePendingIntent).run {
-            // Regardless of success/failure of the removal, add the new geofence
             addOnCompleteListener {
-                // Add the new geofence request with the new geofence
                 geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent).run {
                     addOnSuccessListener {
-                        // Geofences added.
-                        Toast.makeText(this@HuntMainActivity, R.string.geofences_added,
-                            Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(this@HuntMainActivity, R.string.geofences_added, Toast.LENGTH_SHORT).show()
                         Log.e("Add Geofence", geofence.requestId)
-                        // Tell the viewmodel that we've reached the end of the game and
-                        // activated the last "geofence" --- by removing the Geofence.
                         viewModel.geofenceActivated()
                     }
                     addOnFailureListener {
-                        // Failed to add geofences.
-                        Toast.makeText(this@HuntMainActivity, R.string.geofences_not_added,
-                            Toast.LENGTH_SHORT).show()
-                        if ((it.message != null)) {
+                        Toast.makeText(this@HuntMainActivity, R.string.geofences_not_added, Toast.LENGTH_SHORT).show()
+                        if (it.message != null) {
                             Log.w(TAG, it.message!!)
                         }
                     }
