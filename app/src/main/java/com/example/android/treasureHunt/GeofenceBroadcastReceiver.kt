@@ -35,10 +35,52 @@ import com.google.android.gms.location.GeofencingEvent
  * message associated with each Geofence.
  */
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
-
     override fun onReceive(context: Context, intent: Intent) {
-        // TODO: Step 11 implement the onReceive method
+        if (intent.action == ACTION_GEOFENCE_EVENT) {
+            val geofencingEvent = GeofencingEvent.fromIntent(intent)
+
+            if (geofencingEvent?.hasError() == true) {
+                val errorMessage = errorMessage(context, geofencingEvent.errorCode)
+                Log.e(TAG, errorMessage)
+                return
+            }
+
+            if (geofencingEvent?.geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+                Log.v(TAG, context.getString(R.string.geofence_entered))
+
+                val fenceId = when {
+                    geofencingEvent.triggeringGeofences.isNullOrEmpty().not() ->
+                        geofencingEvent.triggeringGeofences?.get(0)?.requestId
+                    else -> {
+                        Log.e(TAG, "No Geofence Trigger Found! Abort mission!")
+                        return
+                    }
+                }
+                // Check geofence against the constants listed in GeofenceUtil.kt to see if the
+                // user has entered any of the locations we track for geofences.
+                val foundIndex = GeofencingConstants.LANDMARK_DATA.indexOfFirst {
+                    it.id == fenceId
+                }
+
+                // Unknown Geofences aren't helpful to us
+                if ( -1 == foundIndex ) {
+                    Log.e(TAG, "Unknown Geofence: Abort Mission")
+                    return
+                }
+
+                val notificationManager = ContextCompat.getSystemService(
+                    context,
+                    NotificationManager::class.java
+                ) as NotificationManager
+
+                notificationManager.sendGeofenceEnteredNotification(
+                    context, foundIndex
+                )
+            }
+        }
     }
+
 }
+
 
 private const val TAG = "GeofenceReceiver"
