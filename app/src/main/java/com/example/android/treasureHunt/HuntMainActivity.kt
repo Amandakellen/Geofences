@@ -136,8 +136,7 @@ class HuntMainActivity : AppCompatActivity() {
                 binding.activityMapsMain,
                 R.string.permission_denied_explanation,
                 Snackbar.LENGTH_INDEFINITE
-            )
-                .setAction(R.string.settings) {
+            ).setAction(R.string.settings) {
                     startActivity(Intent().apply {
                         action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
                         data = Uri.fromParts("package", APPLICATION_ID, null)
